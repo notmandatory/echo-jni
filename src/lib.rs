@@ -32,11 +32,10 @@ pub mod android {
         Ok(output.into_inner())
     }
 
-    impl JNIError {
-        fn into_string(self, env: &JNIEnv) -> jstring {
-            let serialized = serde_json::to_string(&self)
-                .unwrap_or("{\"error\": \"Can't serialize error\", \"code\": -1000}".to_string());
-            string_to_jstring(env, &serialized).unwrap_or(JObject::null().into_inner())
+    impl ToString for JNIError {
+        fn to_string(&self) -> String {
+            serde_json::to_string(self)
+                .unwrap_or("{\"error\": \"Can't serialize error\", \"code\": -1000}".to_string())
         }
     }
 
@@ -44,37 +43,25 @@ pub mod android {
     pub unsafe extern "C" fn Java_org_notmandatory_echojni_Lib_echo(
         env: JNIEnv,
         _: JClass,
-        incoming_string: JString,
+        incoming_jstring: JString,
     ) -> jstring {
         android_logger::init_once(
             android_logger::Config::default().with_min_level(log::Level::Debug),
         );
 
-        let incoming_cstr = match env.get_string(incoming_string) {
-            Ok(string) => CStr::from_ptr(string.as_ptr()),
+        let incoming_string: String = match env.get_string(incoming_jstring) {
+            Ok(string) => string.into(),
             Err(e) => {
-                return JNIError {
+                JNIError {
                     error: format!("Invalid input string: {:?}", e),
                     code: -1001,
-                }
-                    .into_string(&env)
+                }.to_string()
             }
         };
 
-        let incoming_str = match incoming_cstr.to_str() {
-            Ok(string) => string,
-            Err(e) => {
-                return JNIError {
-                    error: format!("Invalid input string encoding: {:?}", e),
-                    code: -1002,
-                }
-                    .into_string(&env)
-            }
-        };
-
-        let echo_string = String::from(incoming_str);
+        let echo_string = incoming_string.clone();
         debug!("echo \"{}\"", &echo_string);
-        thread::sleep(time::Duration::from_millis(10));
+        thread::sleep(time::Duration::from_millis(1));
 
         string_to_jstring(&env, &echo_string).unwrap_or(JObject::null().into_inner())
     }
