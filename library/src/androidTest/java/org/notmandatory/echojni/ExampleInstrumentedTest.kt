@@ -26,7 +26,7 @@ class ExampleInstrumentedTest {
     }
 
     @Test
-    fun multithread() {
+    fun multiThread() {
         runBlocking {
             val flow1 = newFlow(1).flowOn(Dispatchers.IO)
             val flow2 = newFlow(2).flowOn(Dispatchers.IO)
@@ -37,26 +37,26 @@ class ExampleInstrumentedTest {
 
     private fun newFlow(id: Int): Flow<Pair<Int, String>> {
         return (1..100).asFlow()
-            .onStart { Log.d("MT-TEST", "Start flow $id") }
-            .onCompletion { Log.d("MT-TEST", "Complete flow $id") }
+            .onStart { Log.d("MT-TEST", "start flow $id") }
+            .onCompletion { Log.d("MT-TEST", "complete flow $id") }
             //.map { MT-TESTAndGetBalance(it) }
-            .onEach { Log.d("MT-TEST", "Flow $id, iteration $it") }
+            .onEach { Log.d("MT-TEST", "flow $id, iteration $it") }
             .map {
-                Pair(it, Lib().echo("Flow $id, iteration $it"))
+                Pair(it, Lib().echo("flow $id, iteration $it"))
             }
             .catch { e ->
-                Log.e("MT-TEST", "Failed flow $id with exception: $e")
+                Log.e("MT-TEST", "failed flow $id with exception: $e")
                 fail()
             }
             .onEach {
                 //assertFalse(it.second == 0L)
-                Log.d("MT-TEST", "Verifying flow $id, iteration ${it.first}")
+                Log.d("MT-TEST", "verifying flow $id, iteration ${it.first}")
                 assertFalse(
                     "NullOrEmpty, flow $id, iteration ${it.first}",
                     it.second.isNullOrEmpty()
                 )
-                assertEquals("Flow $id, iteration ${it.first}", it.second)
-                Log.d("MT-TEST", "Finished flow $id iteration ${it.first}")
+                assertEquals("flow $id, iteration ${it.first}", it.second)
+                Log.d("MT-TEST", "finished flow $id iteration ${it.first}")
             }
     }
 }
